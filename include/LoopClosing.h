@@ -223,9 +223,7 @@ protected:
     bool mbFixScale;
 
 
-    bool mnFullBAIdx;
-
-
+    int mnFullBAIdx;
 
     vector<double> vdPR_CurrentTime;
     vector<double> vdPR_MatchedTime;

@@ -706,7 +706,7 @@ void KeyFrameDatabase::DetectNBestCandidates(KeyFrame *pKF, vector<KeyFrame*> &v
     set<KeyFrame*> spAlreadyAddedKF;
     int i = 0;
     list<pair<float,KeyFrame*> >::iterator it=lAccScoreAndMatch.begin();
-    while(i < lAccScoreAndMatch.size() && (vpLoopCand.size() < nNumCandidates || vpMergeCand.size() < nNumCandidates))
+    while(static_cast<unsigned int>(i) < lAccScoreAndMatch.size() && (vpLoopCand.size() < static_cast<unsigned int>(nNumCandidates) || vpMergeCand.size() < static_cast<unsigned int>(nNumCandidates)))
     {
         KeyFrame* pKFi = it->second;
         if(pKFi->isBad())
@@ -714,11 +714,11 @@ void KeyFrameDatabase::DetectNBestCandidates(KeyFrame *pKF, vector<KeyFrame*> &v
 
         if(!spAlreadyAddedKF.count(pKFi))
         {
-            if(pKF->GetMap() == pKFi->GetMap() && vpLoopCand.size() < nNumCandidates)
+            if(pKF->GetMap() == pKFi->GetMap() && vpLoopCand.size() < static_cast<unsigned int>(nNumCandidates))
             {
                 vpLoopCand.push_back(pKFi);
             }
-            else if(pKF->GetMap() != pKFi->GetMap() && vpMergeCand.size() < nNumCandidates && !pKFi->GetMap()->IsBad())
+            else if(pKF->GetMap() != pKFi->GetMap() && vpMergeCand.size() < static_cast<unsigned int>(nNumCandidates) && !pKFi->GetMap()->IsBad())
             {
                 vpMergeCand.push_back(pKFi);
             }

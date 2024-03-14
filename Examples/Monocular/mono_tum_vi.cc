@@ -89,7 +89,7 @@ int main(int argc, char **argv)
     cout.precision(17);
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::MONOCULAR,false, 0, file_name);
+    ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::MONOCULAR, true, 0, file_name);
     float imageScale = SLAM.GetImageScale();
 
     double t_resize = 0.f;
@@ -98,16 +98,17 @@ int main(int argc, char **argv)
     int proccIm = 0;
     for (seq = 0; seq<num_seq; seq++)
     {
-
         // Main loop
         cv::Mat im;
         proccIm = 0;
         cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(3.0, cv::Size(8, 8));
         for(int ni=0; ni<nImages[seq]; ni++, proccIm++)
         {
-
+            // std::cout << "number of image = " << ni << std::endl;
             // Read image from file
-            im = cv::imread(vstrImageFilenames[seq][ni],cv::IMREAD_GRAYSCALE); //,cv::IMREAD_GRAYSCALE);
+            im = cv::imread(vstrImageFilenames[seq][ni], cv::IMREAD_GRAYSCALE); //,cv::IMREAD_GRAYSCALE);
+
+            // std::cout << "im channels : " << im.channels() << std::endl;
 
             if(imageScale != 1.f)
             {
@@ -138,6 +139,7 @@ int main(int argc, char **argv)
 
             // cout << "mat type: " << im.type() << endl;
             double tframe = vTimestampsCam[seq][ni];
+            // std::cout << "timestamp : " << tframe << std::endl;
 
             if(im.empty())
             {

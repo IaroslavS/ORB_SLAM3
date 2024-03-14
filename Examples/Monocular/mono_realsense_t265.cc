@@ -97,8 +97,8 @@ int main(int argc, char **argv)
     int width_img = intrinsics.width;
     int height_img = intrinsics.height;
 
-    double t_resize = 0.f;
-    double t_track = 0.f;
+    // double t_resize = 0.f;
+    // double t_track = 0.f;
 
     while(b_continue_session)
     {
@@ -151,15 +151,15 @@ int main(int argc, char **argv)
             // Pass the image to the SLAM system
             SLAM.TrackMonocular(imCV, timestamp_ms);
 
-#ifdef REGISTER_TIMES
-  #ifdef COMPILEDWITHC11
-            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-  #else
-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
-  #endif
-            t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t2 - t1).count();
-            SLAM.InsertTrackTime(t_track);
-#endif
+// #ifdef REGISTER_TIMES
+//   #ifdef COMPILEDWITHC11
+//             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+//   #else
+//             std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
+//   #endif
+//             t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t2 - t1).count();
+//             SLAM.InsertTrackTime(t_track);
+// #endif
 
         }
     }

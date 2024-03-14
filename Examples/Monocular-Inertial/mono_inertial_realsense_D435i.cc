@@ -300,7 +300,7 @@ int main(int argc, char **argv) {
     v_accel_timestamp_sync.clear();
 
     double t_resize = 0.f;
-    double t_track = 0.f;
+    // double t_track = 0.f;
 
     while (!SLAM.isShutDown())
     {
@@ -400,7 +400,7 @@ int main(int argc, char **argv) {
     #else
         std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
     #endif
-        t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
+        double t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
         SLAM.InsertTrackTime(t_track);
 #endif
 

@@ -1,0 +1,111 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters. Adjust them!
+#--------------------------------------------------------------------------------------------
+File.version: "1.0"
+
+Camera.type: "PinHole"
+
+# Camera calibration and distortion parameters (OpenCV) 
+Camera1.fx: 448.29308777949757
+Camera1.fy: 447.9978999410104
+Camera1.cx: 301.68106404856
+Camera1.cy: 242.76373276701213
+
+Camera1.k1: -0.1762088977915627
+Camera1.k2: 0.08539238648206524
+Camera1.p1: 0.0002462342497331716
+Camera1.p2: 0.00032291209479618914
+Camera1.k3: 0.000000
+
+Camera.imageScale: 1.0
+
+# Camera frames per second 
+Camera.fps: 16
+
+# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
+Camera.RGB: 1
+
+# Camera resolution
+Camera.width: 612
+Camera.height: 512
+
+#--------------------------------------------------------------------------------------------
+# ORB Parameters
+#--------------------------------------------------------------------------------------------
+
+# ORB Extractor: Number of features per image
+ORBextractor.nFeatures: 2000
+
+# ORB Extractor: Scale factor between levels in the scale pyramid 	
+ORBextractor.scaleFactor: 1.2
+
+# ORB Extractor: Number of levels in the scale pyramid	
+ORBextractor.nLevels: 8
+
+# ORB Extractor: Fast threshold
+# Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
+# Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
+# You can lower these values if your images have low contrast			
+ORBextractor.iniThFAST: 10
+ORBextractor.minThFAST: 7
+
+# ORB Matcher
+ORBmatcher.max_feat_distance_initialization: 50 # 50
+ORBmatcher.max_feat_distance_tracking: 150 # 100
+ORBmatcher.max_feat_distance_triangulation: 80 # 50
+
+#--------------------------------------------------------------------------------------------
+# Initialization parameteres
+MonocularInitialization.min_matches: 20
+MonocularInitialization.window_size: 30 # 100
+MonocularInitialization.ReconstructWithTwoViews.minTriangulated: 20
+MonocularInitialization.ReconstructWithTwoViews.sigma: 3
+MonocularInitialization.ReconstructWithTwoViews.best_hypothesis_confidence: 0.8 # 0.7
+#--------------------------------------------------------------------------------------------
+
+#--------------------------------------------------------------------------------------------
+# Tracking parameteres
+Tracking.motion_tracking_optimization_chi_sq_mono: 4.605 # Two degree-of-freedom (n=2), Chi-squared value with significance level of 5% - 5.991. 10% - 4.605, 20% - 3.219
+Tracking.motion_tracking_optimization_chi_sq_stereo: 6.251 # Two degree-of-freedom (n=3), Chi-squared value with significance level of 5% - 7.815. 10% - 6.251, 20% - 4.642
+Tracking.local_map_tracking_optimization_chi_sq_mono: 4.605
+Tracking.local_map_tracking_optimization_chi_sq_stereo: 6.251
+Tracking.local_map_inliers_after_optimization_mono: 10
+Tracking.local_map_inliers_after_optimization_imu_mono: 15
+Tracking.local_map_inliers_after_optimization_imu_stereo: 15
+Tracking.local_map_inliers_after_optimization_recently_lost: 10
+#--------------------------------------------------------------------------------------------
+
+#--------------------------------------------------------------------------------------------
+# Map point culling conidtions
+MapPointCulling.too_old_from_first_seen_keyframe: 10 # default 3
+MapPointCulling.too_unreliable_num_observed_keyframes: 2 # default 2 for mono, otherwise 3
+MapPointCulling.too_unreliable_num_keyframes_past: 2 # default 2
+#--------------------------------------------------------------------------------------------
+
+loopClosing: true
+
+#--------------------------------------------------------------------------------------------
+# Log parameters
+#--------------------------------------------------------------------------------------------
+Log.filename: "/home/docker_orb_slam3/orb_slam3/log/log"
+
+Viewer.save_debug_frames: 0
+Viewer.save_debug_frames_path: /home/datasets/debug_images
+
+#--------------------------------------------------------------------------------------------
+# Viewer Parameters
+#--------------------------------------------------------------------------------------------
+Viewer.imageViewScale: 1.4
+Viewer.KeyFrameSize: 0.1
+Viewer.KeyFrameLineWidth: 1.0
+Viewer.GraphLineWidth: 0.9
+Viewer.PointSize: 2.0
+Viewer.CameraSize: 0.2
+Viewer.CameraLineWidth: 3.0
+Viewer.ViewpointX: 0.0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -1.8
+Viewer.ViewpointF: 500.0
+

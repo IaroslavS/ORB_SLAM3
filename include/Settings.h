@@ -34,6 +34,8 @@ namespace ORB_SLAM3 {
 
     class System;
 
+    class GeometricCamera;
+
     //TODO: change to double instead of float
 
     class Settings {
@@ -121,7 +123,7 @@ namespace ORB_SLAM3 {
         cv::Mat M2l() {return M2l_;}
         cv::Mat M1r() {return M1r_;}
         cv::Mat M2r() {return M2r_;}
-
+    
     private:
         template<typename T>
         T readParameter(cv::FileStorage& fSettings, const std::string& name, bool& found,const bool required = true){

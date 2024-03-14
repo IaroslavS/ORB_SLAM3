@@ -314,6 +314,8 @@ public:
 
     const double mTimeStamp;
 
+    const double altitude_;
+
     // Grid (to speed up feature matching)
     const int mnGridCols;
     const int mnGridRows;
@@ -536,7 +538,7 @@ public:
         cout << "Point distribution in KeyFrame: left-> " << left << " --- right-> " << right << endl;
     }
 
-
+    
 };
 
 } //namespace ORB_SLAM

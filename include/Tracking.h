@@ -75,6 +75,8 @@ public:
 
     void GrabImuData(const IMU::Point &imuMeasurement);
 
+    void GrabBarometerData(const double& altitude);
+
     void SetLocalMapper(LocalMapping* pLocalMapper);
     void SetLoopClosing(LoopClosing* pLoopClosing);
     void SetViewer(Viewer* pViewer);
@@ -236,6 +238,10 @@ protected:
 
     // Queue of IMU measurements between frames
     std::list<IMU::Point> mlQueueImuData;
+
+    // data from barometer
+    double latest_altitude_;
+    double altitude_at_ground_; 
 
     // Vector of IMU measurements from previous to current frame (to be filled by PreintegrateIMU)
     std::vector<IMU::Point> mvImuFromLastFrame;

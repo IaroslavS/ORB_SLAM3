@@ -59,7 +59,6 @@ int main(int argc, char **argv)
     cout << "Images in the sequence: " << nImages << endl << endl;
 
     double t_resize = 0.f;
-    double t_track = 0.f;
 
     // Main loop
     cv::Mat im;
@@ -115,7 +114,7 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef REGISTER_TIMES
-            t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t2 - t1).count();
+            double t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t2 - t1).count();
             SLAM.InsertTrackTime(t_track);
 #endif
 

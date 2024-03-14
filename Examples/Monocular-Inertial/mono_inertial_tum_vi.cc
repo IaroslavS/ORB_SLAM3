@@ -97,12 +97,12 @@ int main(int argc, char **argv)
         }
 
         // Find first imu to be considered, supposing imu measurements start first
-
+        
         while(vTimestampsImu[seq][first_imu[seq]]<=vTimestampsCam[seq][0])
             first_imu[seq]++;
         first_imu[seq]--; // first imu measurement to be considered
-
-    }
+        
+            }
 
     // Vector for tracking time statistics
     vector<float> vTimesTrack;
@@ -133,9 +133,10 @@ int main(int argc, char **argv)
         cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(3.0, cv::Size(8, 8));
         for(int ni=0; ni<nImages[seq]; ni++, proccIm++)
         {
-
+            
             // Read image from file
-            im = cv::imread(vstrImageFilenames[seq][ni],cv::IMREAD_GRAYSCALE); //,cv::IMREAD_GRAYSCALE);
+            // im = cv::imread(vstrImageFilenames[seq][ni],cv::IMREAD_GRAYSCALE); //,cv::IMREAD_GRAYSCALE);
+            im = cv::imread(vstrImageFilenames[seq][ni], 128);
 
             // clahe
             clahe->apply(im,im);
@@ -143,6 +144,8 @@ int main(int argc, char **argv)
 
             // cout << "mat type: " << im.type() << endl;
             double tframe = vTimestampsCam[seq][ni];
+
+            // std::cout << "Opening image with timestamp = " << vTimestampsCam[seq][ni] << std::endl;
 
             if(im.empty())
             {
@@ -161,6 +164,7 @@ int main(int argc, char **argv)
 
                 while(vTimestampsImu[seq][first_imu[seq]]<=vTimestampsCam[seq][ni])
                 {
+                    // std::cout << "acceleratoin along z : \033[1;31m" << vAcc[seq][first_imu[seq]].z + 9.81 << "\033[0;m" << std::endl;
                     vImuMeas.push_back(ORB_SLAM3::IMU::Point(vAcc[seq][first_imu[seq]].x,vAcc[seq][first_imu[seq]].y,vAcc[seq][first_imu[seq]].z,
                                                              vGyro[seq][first_imu[seq]].x,vGyro[seq][first_imu[seq]].y,vGyro[seq][first_imu[seq]].z,
                                                              vTimestampsImu[seq][first_imu[seq]]));
@@ -310,7 +314,7 @@ void LoadImagesTUMVI(const string &strImagePath, const string &strPathTimes,
             vTimeStamps.push_back(t/1e9);
         }
     }
-}
+    }
 
 void LoadIMU(const string &strImuPath, vector<double> &vTimeStamps, vector<cv::Point3f> &vAcc, vector<cv::Point3f> &vGyro)
 {
@@ -346,4 +350,4 @@ void LoadIMU(const string &strImuPath, vector<double> &vTimeStamps, vector<cv::P
             vGyro.push_back(cv::Point3f(data[1],data[2],data[3]));
         }
     }
-}
+    }

@@ -67,6 +67,10 @@ public:
     // Constructor for Monocular cameras.
     Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, GeometricCamera* pCamera, cv::Mat &distCoef, const float &bf, const float &thDepth, Frame* pPrevF = static_cast<Frame*>(NULL), const IMU::Calib &ImuCalib = IMU::Calib());
 
+    // Constructor for Monocular cameras with barometer.
+    Frame(const cv::Mat &imGray, const double& altitude, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, GeometricCamera* pCamera, cv::Mat &distCoef, const float &bf, const float &thDepth, Frame* pPrevF = static_cast<Frame*>(NULL), const IMU::Calib &ImuCalib = IMU::Calib());
+
+
     // Destructor
     // ~Frame();
 
@@ -195,8 +199,14 @@ public:
     // Feature extractor. The right is used only in the stereo case.
     ORBextractor* mpORBextractorLeft, *mpORBextractorRight;
 
+    // image
+    cv::Mat imgRGB;
+
     // Frame timestamp.
     double mTimeStamp;
+
+    // altitude
+    double altitude_=-1;
 
     // Calibration matrix and OpenCV distortion parameters.
     cv::Mat mK;
@@ -322,7 +332,7 @@ private:
 
     std::mutex *mpMutexImu;
 
-public:
+    public:
     GeometricCamera* mpCamera, *mpCamera2;
 
     //Number of KeyPoints extracted in the left and right images

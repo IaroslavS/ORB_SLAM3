@@ -333,10 +333,13 @@ void FrameDrawer::DrawTextInfo(cv::Mat &im, int nState, cv::Mat &imText)
     stringstream s;
     if(nState==Tracking::NO_IMAGES_YET)
         s << " WAITING FOR IMAGES";
-    else if(nState==Tracking::NOT_INITIALIZED)
+    else if(nState==Tracking::NOT_INITIALIZED) {
+        s << " Timestamp: " << std::fixed << std::setw(6) << std::setprecision(2) << timestamp_ << ". ";
         s << " TRYING TO INITIALIZE ";
+    }
     else if(nState==Tracking::OK)
     {
+        s << " Timestamp: " << std::fixed << std::setw(6) << std::setprecision(2) << timestamp_ << ". ";
         if(!mbOnlyTracking)
             s << "SLAM MODE |  ";
         else
@@ -348,13 +351,25 @@ void FrameDrawer::DrawTextInfo(cv::Mat &im, int nState, cv::Mat &imText)
         if(mnTrackedVO>0)
             s << ", + VO matches: " << mnTrackedVO;
     }
+    else if (nState==Tracking::RECENTLY_LOST) {
+        s << " Timestamp: " << std::fixed << std::setw(6) << std::setprecision(2) << timestamp_ << ". ";
+        s << " TRACK LOST FOR SHORT TIME (< 3 sec). TRYING TO RELOCALIZE. Matches: " << mnTracked;
+    }
     else if(nState==Tracking::LOST)
     {
+        s << " Timestamp: " << std::fixed << std::setw(6) << std::setprecision(2) << timestamp_ << ".";
         s << " TRACK LOST. TRYING TO RELOCALIZE ";
     }
     else if(nState==Tracking::SYSTEM_NOT_READY)
     {
         s << " LOADING ORB VOCABULARY. PLEASE WAIT...";
+    }
+
+    if (altitude_ != -1) {
+        if (s.str().empty())
+            s << " Altitude: " << altitude_;
+        else 
+            s << ", altitude: " << altitude_;
     }
 
     int baseline=0;
@@ -374,6 +389,8 @@ void FrameDrawer::Update(Tracking *pTracker)
     mvCurrentKeys=pTracker->mCurrentFrame.mvKeys;
     mThDepth = pTracker->mCurrentFrame.mThDepth;
     mvCurrentDepth = pTracker->mCurrentFrame.mvDepth;
+    altitude_ = pTracker->mCurrentFrame.altitude_;
+    timestamp_ = pTracker->mCurrentFrame.mTimeStamp;
 
     if(both){
         mvCurrentKeysRight = pTracker->mCurrentFrame.mvKeysRight;

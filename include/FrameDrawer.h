@@ -61,13 +61,15 @@ protected:
     int N;
     vector<cv::KeyPoint> mvCurrentKeys,mvCurrentKeysRight;
     vector<bool> mvbMap, mvbVO;
-    bool mbOnlyTracking;
+        bool mbOnlyTracking;
     int mnTracked, mnTrackedVO;
     vector<cv::KeyPoint> mvIniKeys;
     vector<int> mvIniMatches;
     int mState;
     std::vector<float> mvCurrentDepth;
     float mThDepth;
+    double altitude_;
+    double timestamp_;
 
     Atlas* mpAtlas;
 
@@ -84,7 +86,7 @@ protected:
     map<long unsigned int, cv::Point2f> mmProjectPoints;
     map<long unsigned int, cv::Point2f> mmMatchedInImage;
 
-};
+    };
 
 } //namespace ORB_SLAM
 

@@ -79,6 +79,15 @@ Required to calculate the alignment of the trajectory with the ground truth. **R
 
 We provide some examples to process input of a monocular, monocular-inertial, stereo, stereo-inertial or RGB-D camera using ROS. Building these examples is optional. These have been tested with ROS Melodic under Ubuntu 18.04.
 
+# 3. Docker
+```
+docker pull lmwafer/orb-slam-3-ready:1.1-ubuntu18.04
+cd docker
+bash start.sh <path/to/dataset>
+bash into.sh
+```
+
+
 # 3. Building ORB-SLAM3 library and examples
 
 Clone the repository:

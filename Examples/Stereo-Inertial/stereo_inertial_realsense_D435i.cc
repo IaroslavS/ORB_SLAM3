@@ -329,8 +329,8 @@ int main(int argc, char **argv) {
     v_accel_data_sync.clear();
     v_accel_timestamp_sync.clear();
 
-    double t_resize = 0.f;
-    double t_track = 0.f;
+    // double t_resize = 0.f;
+    // double t_track = 0.f;
 
     while (!SLAM.isShutDown())
     {
@@ -407,15 +407,15 @@ int main(int argc, char **argv) {
             cv::resize(im, im, cv::Size(width, height));
             cv::resize(imRight, imRight, cv::Size(width, height));
 
-#ifdef REGISTER_TIMES
-    #ifdef COMPILEDWITHC11
-            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
-    #else
-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
-    #endif
-            t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
-            SLAM.InsertResizeTime(t_resize);
-#endif
+// #ifdef REGISTER_TIMES
+//     #ifdef COMPILEDWITHC11
+//             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+//     #else
+//             std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
+//     #endif
+//             t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+//             SLAM.InsertResizeTime(t_resize);
+// #endif
         }
 
 #ifdef REGISTER_TIMES
@@ -427,15 +427,15 @@ int main(int argc, char **argv) {
 #endif
         // Stereo images are already rectified.
         SLAM.TrackStereo(im, imRight, timestamp, vImuMeas);
-#ifdef REGISTER_TIMES
-    #ifdef COMPILEDWITHC11
-        std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
-    #else
-        std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
-    #endif
-        t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
-        SLAM.InsertTrackTime(t_track);
-#endif
+// #ifdef REGISTER_TIMES
+//     #ifdef COMPILEDWITHC11
+//         std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+//     #else
+//         std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
+//     #endif
+//         t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
+//         SLAM.InsertTrackTime(t_track);
+// #endif
 
 
 

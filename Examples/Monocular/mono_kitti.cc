@@ -59,8 +59,8 @@ int main(int argc, char **argv)
     cout << "Images in the sequence: " << nImages << endl << endl;
 
     // Main loop
-    double t_resize = 0.f;
-    double t_track = 0.f;
+    // double t_resize = 0.f;
+    // double t_track = 0.f;
 
     cv::Mat im;
     for(int ni=0; ni<nImages; ni++)
@@ -105,7 +105,8 @@ int main(int argc, char **argv)
 #endif
 
         // Pass the image to the SLAM system
-        SLAM.TrackMonocular(im,tframe,vector<ORB_SLAM3::IMU::Point>(), vstrImageFilenames[ni]);
+        double altitude = -1;
+        SLAM.TrackMonocular(im,tframe,vector<ORB_SLAM3::IMU::Point>(), altitude, vstrImageFilenames[ni]);
 
 #ifdef COMPILEDWITHC11
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
@@ -113,10 +114,10 @@ int main(int argc, char **argv)
         std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
 #endif
 
-#ifdef REGISTER_TIMES
-            t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t2 - t1).count();
-            SLAM.InsertTrackTime(t_track);
-#endif
+// #ifdef REGISTER_TIMES
+//             t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t2 - t1).count();
+//             SLAM.InsertTrackTime(t_track);
+// #endif
 
         double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
 

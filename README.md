@@ -81,8 +81,8 @@ We provide some examples to process input of a monocular, monocular-inertial, st
 
 # 3. Docker
 ```
-docker pull lmwafer/orb-slam-3-ready:1.1-ubuntu18.04
 cd docker
+bash build.sh
 bash start.sh <path/to/dataset>
 bash into.sh
 ```

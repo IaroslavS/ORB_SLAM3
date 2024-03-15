@@ -38,6 +38,11 @@
 #include "Thirdparty/g2o/g2o/core/robust_kernel_impl.h"
 #include "Thirdparty/g2o/g2o/solvers/linear_solver_dense.h"
 
+#include "G2oTypes.h"
+
+#include "Converter.h"
+#include "OptimizableTypes.h"
+
 namespace ORB_SLAM3
 {
 
@@ -97,6 +102,11 @@ public:
     void static InertialOptimization(Map *pMap, Eigen::Matrix3d &Rwg, double &scale, Eigen::Vector3d &bg, Eigen::Vector3d &ba, bool bMono, Eigen::MatrixXd  &covInertial, bool bFixedVel=false, bool bGauss=false, float priorG = 1e2, float priorA = 1e6);
     void static InertialOptimization(Map *pMap, Eigen::Vector3d &bg, Eigen::Vector3d &ba, float priorG = 1e2, float priorA = 1e6);
     void static InertialOptimization(Map *pMap, Eigen::Matrix3d &Rwg, double &scale);
+
+    static Eigen::Matrix<float, 6, 6> estimate_covariance(g2o::VertexSE3Expmap* frm_vtx, 
+                                                            vector<ORB_SLAM3::EdgeSE3ProjectXYZOnlyPose*>& vpEdgesMono,
+                                                            vector<ORB_SLAM3::EdgeSE3ProjectXYZOnlyPoseToBody*>& vpEdgesMono_FHR,
+                                                            vector<g2o::EdgeStereoSE3ProjectXYZOnlyPose*> vpEdgesStereo);
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };

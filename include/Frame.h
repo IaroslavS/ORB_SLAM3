@@ -308,6 +308,8 @@ public:
 
     int mnDataset;
 
+    Eigen::Matrix<float, 6, 6> covariance_;
+
 #ifdef REGISTER_TIMES
     double mTimeORB_Ext;
     double mTimeStereoMatch;

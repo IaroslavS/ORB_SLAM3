@@ -34,12 +34,8 @@
 #include "Thirdparty/g2o/g2o/types/types_six_dof_expmap.h"
 #include "Thirdparty/g2o/g2o/core/robust_kernel_impl.h"
 #include "Thirdparty/g2o/g2o/solvers/linear_solver_dense.h"
-#include "G2oTypes.h"
-#include "Converter.h"
 
 #include<mutex>
-
-#include "OptimizableTypes.h"
 
 
 namespace ORB_SLAM3
@@ -1109,6 +1105,8 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     Sophus::SE3<float> pose(SE3quat_recov.rotation().cast<float>(),
             SE3quat_recov.translation().cast<float>());
     pFrame->SetPose(pose);
+
+    pFrame->covariance_ = estimate_covariance(vSE3, vpEdgesMono, vpEdgesMono_FHR, vpEdgesStereo);
 
     return nInitialCorrespondences-nBad;
 }
@@ -5585,6 +5583,138 @@ void Optimizer::OptimizeEssentialGraph4DoF(Map* pMap, KeyFrame* pLoopKF, KeyFram
         pMP->UpdateNormalAndDepth();
     }
     pMap->IncreaseChangeIndex();
+}
+
+Eigen::Matrix<float, 6, 6> Optimizer::estimate_covariance(g2o::VertexSE3Expmap* frm_vtx, 
+                                               vector<ORB_SLAM3::EdgeSE3ProjectXYZOnlyPose*>& vpEdgesMono,
+                                               vector<ORB_SLAM3::EdgeSE3ProjectXYZOnlyPoseToBody*>& vpEdgesMono_FHR,
+                                               vector<g2o::EdgeStereoSE3ProjectXYZOnlyPose*> vpEdgesStereo
+                                               ) {
+    Eigen::Matrix<float, 6, 1> scale;
+    scale << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
+
+    // std::cout << "scale * scale.transpose():\n" << scale * scale.transpose() << std::endl;
+
+    // all errors give a single vector of size N
+    //   mono edge has 2 errors - x_left, y_left
+    //   stereo edge has 3 errors - x_left, y_left, x_right
+    size_t N = 0;
+    float squared_error = 0;
+    for(size_t i=0, iend=vpEdgesMono.size(); i<iend; i++)
+    {
+        ORB_SLAM3::EdgeSE3ProjectXYZOnlyPose* edge = vpEdgesMono[i];
+        
+        // if outlier - skip
+        if(edge->level() == 1)
+            continue;
+
+        edge->computeError();
+        auto edge_error_data = edge->errorData();
+        for (int edge_error_idx = 0; edge_error_idx < edge->dimension(); ++edge_error_idx) {
+            squared_error += edge_error_data[edge_error_idx] * edge_error_data[edge_error_idx];
+            ++N;
+        }
+    }
+
+    for(size_t i=0, iend=vpEdgesMono_FHR.size(); i<iend; i++)
+    {
+        ORB_SLAM3::EdgeSE3ProjectXYZOnlyPoseToBody* edge = vpEdgesMono_FHR[i];
+
+        // if outlier - skip
+        if(edge->level() == 1)
+            continue;
+
+        edge->computeError();
+        auto edge_error_data = edge->errorData();
+        for (int edge_error_idx = 0; edge_error_idx < edge->dimension(); ++edge_error_idx) {
+            squared_error += edge_error_data[edge_error_idx] * edge_error_data[edge_error_idx];
+            ++N;
+        }
+    }
+
+    for(size_t i=0, iend=vpEdgesStereo.size(); i<iend; i++)
+    {
+        g2o::EdgeStereoSE3ProjectXYZOnlyPose* edge = vpEdgesStereo[i];
+
+        // if outlier - skip
+        if(edge->level() == 1)
+            continue;
+
+        edge->computeError();
+        auto edge_error_data = edge->errorData();
+        for (int edge_error_idx = 0; edge_error_idx < edge->dimension(); ++edge_error_idx) {
+            squared_error += edge_error_data[edge_error_idx] * edge_error_data[edge_error_idx];
+            ++N;
+        }
+    }
+
+    Eigen::Matrix<float, 6, 6> covariance = 1e6 * Eigen::Matrix<float, 6, 6>::Identity();  // default value if estimation failed
+
+    // will divide by (N - 6)
+    if (N > 6) {
+        Eigen::MatrixXf J;
+        J.resize(N, 6);
+        J.setZero();
+
+        double delta_translation = 0.01;
+        double delta_yaw_pitch_roll = 0.001;
+
+        // should augment pose of base in world
+        auto pose_0_cw = frm_vtx->estimate();
+        auto pose_0_wc = pose_0_cw.inverse();
+        auto translation_0 = pose_0_cw.translation().eval();
+        auto yaw_pitch_roll_0 = pose_0_cw.rotation().toRotationMatrix().eulerAngles(2, 1, 0);
+
+        // compute second order approximation of jacobian J
+        for (int delta_sign = -1; delta_sign <= 1; delta_sign += 2) {
+            for (int dim = 0; dim < 6; ++dim) {
+                auto translation = translation_0;
+                auto yaw_pitch_roll = yaw_pitch_roll_0;
+                double delta = 0;
+
+                if (dim < 3) {
+                    // translation
+                    delta = delta_sign * delta_translation;
+                    translation += delta * Eigen::Vector3d::Unit(dim);
+                } else {
+                    // rotation
+                    delta = delta_sign * delta_yaw_pitch_roll;
+                    yaw_pitch_roll += delta * Eigen::Vector3d::Unit(5 - dim);
+                }
+
+                auto Rotation_matrix = Eigen::AngleAxisd(yaw_pitch_roll[0], Eigen::Vector3d::UnitZ()) 
+                                     * Eigen::AngleAxisd(yaw_pitch_roll[1], Eigen::Vector3d::UnitY()) 
+                                     * Eigen::AngleAxisd(yaw_pitch_roll[2], Eigen::Vector3d::UnitX());
+                ::g2o::SE3Quat pose_wc(Rotation_matrix, translation);
+                ::g2o::SE3Quat pose_cw = pose_wc.inverse();
+                frm_vtx->setEstimate(pose_cw);
+
+                size_t error_idx = 0;
+                // for (auto& pose_opt_edge_wrap : pose_opt_edge_wraps) {
+                //     if (pose_opt_edge_wrap.is_inlier()) {
+                //         auto edge = pose_opt_edge_wrap.edge_;
+                //         edge->computeError();
+                //         auto error_data = edge->errorData();
+                //         for (int edge_error_idx = 0; edge_error_idx < edge->dimension(); ++edge_error_idx) {
+                //             J(error_idx, dim) += 0.5 * error_data[edge_error_idx] / delta;
+                //             ++error_idx;
+                //         }
+                //     }
+                // }
+            }
+        }
+
+        // restore estimate
+        frm_vtx->setEstimate(pose_0_cw);
+
+        // 1. Ganesh P. et al. Three Flavors of RGB-D Visual Odometry: Analysis of cost function compromises and covariance 
+        //    estimation accuracy //2020 IEEE/ION Position, Location and Navigation Symposium (PLANS). – IEEE, 2020. – С. 1587-1595.
+        // 2. https://www.mathworks.com/help/stats/nlinfit.html
+        auto H = (J.transpose() * J).eval();
+        covariance = H.inverse().cwiseProduct(scale * scale.transpose()) * squared_error / (N - 6);
+    }
+
+    return covariance;
 }
 
 } //namespace ORB_SLAM

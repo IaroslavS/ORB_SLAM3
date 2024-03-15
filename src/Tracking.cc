@@ -1598,6 +1598,20 @@ Sophus::SE3f Tracking::GrabImageMonocular(const cv::Mat &im, const double &times
         else
             mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth,&mLastFrame,*mpImuCalib);
     }
+    else if (mSensor == System::MONOCULAR_BAROMETER)
+    {
+        if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET ||(lastID - initID) < mMaxFrames)
+            mCurrentFrame = Frame(mImGray, latest_altitude_, timestamp, mpIniORBextractor,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth);
+        else
+            mCurrentFrame = Frame(mImGray, latest_altitude_, timestamp, mpORBextractorLeft,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth);
+    }
+    else if (mSensor == System::IMU_MONOCULAR_BAROMETER)
+    {
+        if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET ||(lastID - initID) < mMaxFrames)
+            mCurrentFrame = Frame(mImGray, latest_altitude_, timestamp, mpIniORBextractor,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth,&mLastFrame,*mpImuCalib);
+        else
+            mCurrentFrame = Frame(mImGray, latest_altitude_, timestamp, mpORBextractorLeft,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth,&mLastFrame,*mpImuCalib);
+    }
 
     if (mState==NO_IMAGES_YET)
         t0=timestamp;
@@ -2577,7 +2591,8 @@ void Tracking::CreateInitialMapMonocular()
     if(mSensor == System::IMU_MONOCULAR)
         invMedianDepth = 4.0f/medianDepth; // 4.0f
     else if (mSensor == System::MONOCULAR_BAROMETER || mSensor == System::IMU_MONOCULAR_BAROMETER) {
-        invMedianDepth = (mCurrentFrame.altitude_ - altitude_at_ground_)/medianDepth;
+        // invMedianDepth = (mCurrentFrame.altitude_ - altitude_at_ground_)/medianDepth;
+        invMedianDepth = 1.0f/medianDepth;
     }
     else
         invMedianDepth = 1.0f/medianDepth;

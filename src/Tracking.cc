@@ -2812,8 +2812,8 @@ void Tracking::optimize_EKF_with_barometer(Frame* pFrame, const float& barometer
     Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
 
     Eigen::Matrix4f prev_pose_cw = pFrame->GetPose().matrix();
-    // std::cout << "prev_pose_cw:\n" << prev_pose_cw << std::endl;
     Eigen::Matrix<float, 6,6> prev_cov = pFrame->covariance_;
+    std::cout << "prev_cov:\n" << prev_cov << std::endl;
     float obs_altitude = static_cast<float>(pFrame->altitude_) - init_altitude;
 
     Eigen::Matrix<float, 1,6> H; // jacobian of observation function

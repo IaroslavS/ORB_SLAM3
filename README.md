@@ -104,7 +104,16 @@ chmod +x build.sh
 
 This will create **libORB_SLAM3.so**  at *lib* folder and the executables in *Examples* folder.
 
-# 4. Running ORB-SLAM3 with your camera
+# 4. Running ORB-SLAM3
+
+## 4.1 For running on dataset FGI, download dataset from (google drive)[https://drive.google.com/drive/folders/1mvsh7czwjcnO1T9o-TMcoX1XpG-RGb6w?usp=sharing].
+
+To run SLAM run the following command inside docker container:
+```bash
+./Examples/Monocular-barometer/mono_barometric_vi ./Vocabulary/ORBvoc.txt ./Examples/Monocular-barometer/FGI_Masala.yaml /home/datasets/FGI\ Masala\ Stereo-Visual-Inertial\ Dataset\ 2021/images/ /home/datasets/FGI\ Masala\ Stereo-Visual-Inertial\ Dataset\ 2021/filenames.txt /home/datasets/FGI\ Masala\ Stereo-Visual-Inertial\ Dataset\ 2021/barometer_FGI.txt
+```
+
+## Running on your camera
 
 Directory `Examples` contains several demo programs and calibration files to run ORB-SLAM3 in all sensor configurations with Intel Realsense cameras T265 and D435i. The steps needed to use your own camera are: 
 

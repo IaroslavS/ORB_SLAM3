@@ -376,9 +376,18 @@ void FrameDrawer::DrawTextInfo(cv::Mat &im, int nState, cv::Mat &imText)
     cv::Size textSize = cv::getTextSize(s.str(),cv::FONT_HERSHEY_PLAIN,1,1,&baseline);
 
     imText = cv::Mat(im.rows+textSize.height+10,im.cols,im.type());
-    im.copyTo(imText.rowRange(0,im.rows).colRange(0,im.cols));
-    imText.rowRange(im.rows,imText.rows) = cv::Mat::zeros(textSize.height+10,im.cols,im.type());
-    cv::putText(imText,s.str(),cv::Point(5,imText.rows-5),cv::FONT_HERSHEY_PLAIN,1,cv::Scalar(255,255,255),1,8);
+    im.copyTo(imText.rowRange(0,im.rows).colRange(0,im.cols)); // copy image content into matrix, that will containt text
+    imText.rowRange(im.rows,imText.rows) = cv::Mat::zeros(textSize.height+10,im.cols,im.type()); // Make font black
+
+    // cv::Point(5,imText.rows-5) - Bottom-left corner of the text string in the image. 
+    // cv::FONT_HERSHEY_PLAIN - fontFace
+    // 1 - fontScale
+    // cv::Scalar(255,255,255) - color
+    // 1 - thickness
+    // 8 - lineType
+    double scale = static_cast<double>(im.cols) / static_cast<double>(std::max(im.cols, textSize.width+10));
+    // scale = 1;
+    cv::putText(imText,s.str(),cv::Point(5,imText.rows-5),cv::FONT_HERSHEY_PLAIN, scale, cv::Scalar(255,255,255),1,8);
 
 }
 

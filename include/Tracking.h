@@ -225,6 +225,8 @@ protected:
     bool NeedNewKeyFrame();
     void CreateNewKeyFrame();
 
+    void static optimize_EKF_with_barometer(Frame* pFrame, const float& barometer_cov, const float& altitude_at_ground);
+
     // Perform preintegration from last frame
     void PreintegrateIMU();
 
@@ -242,6 +244,7 @@ protected:
     // data from barometer
     double latest_altitude_;
     double altitude_at_ground_; 
+    double altitude_at_init_frame_;
 
     // Vector of IMU measurements from previous to current frame (to be filled by PreintegrateIMU)
     std::vector<IMU::Point> mvImuFromLastFrame;

@@ -478,6 +478,8 @@ Sophus::SE3f System::TrackMonocular(const cv::Mat &im, const double &timestamp, 
     mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
     mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
 
+    std::cout << "current pose:\n" << Tcw.matrix() << std::endl;
+
     return Tcw;
 }
 

@@ -1108,6 +1108,8 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 
     pFrame->covariance_ = estimate_covariance(vSE3, vpEdgesMono, vpEdgesMono_FHR, vpEdgesStereo);
 
+    // std::cout << "cov:\n" << pFrame->covariance_ << std::endl;
+
     return nInitialCorrespondences-nBad;
 }
 
@@ -3942,6 +3944,36 @@ void Optimizer::LocalBundleAdjustment(KeyFrame* pMainKF,vector<KeyFrame*> vpAdju
     }
 }
 
+// void Optimizer::optimize_EKF_with_barometer(Frame* pFrame, float barometer_cov)
+// {
+//     // input
+//     //      frame      : Frame*
+//     // output
+//     //      pose       : Eigen::Matrix4d
+//     //      covariance : Eigen::Matrix<float, 6,6>
+
+//     Eigen::Matrix<float, 6,6> cov_result = Eigen::Matrix<float, 6,6>::Identity();
+//     Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
+
+//     Eigen::Matrix4f prev_pose_cw = pFrame->GetPose().matrix();
+//     std::cout << "prev_pose_cw:\n" << prev_pose_cw << std::endl;
+//     Eigen::Matrix<float, 6,6> prev_cov = pFrame->covariance_;
+//     float obs_altitude = static_cast<float>(pFrame->altitude_);
+
+//     Eigen::Matrix<float, 1,6> H; // jacobian of observation function
+//     H << 0,0,1,0,0,0;
+
+//     // double S = H * prev_cov * H.transpose() + barometer_cov; // Innovation covariance matrix
+//     double S = prev_cov(2,2)*1e9 + barometer_cov; // Innovation covariance matrix
+//     float K = prev_cov(2,2)*1e9 / S;
+//     std::cout << "K: " << K << std::endl;
+//     float predicted_state_z = prev_pose_cw(2,3) + K * (obs_altitude - prev_pose_cw(2,3));
+//     std::cout << "predicted_state_z: " << predicted_state_z << std::endl;
+//     prev_pose_cw(2,3) = predicted_state_z;
+//     Sophus::SE3f se3_pose(prev_pose_cw);
+//     pFrame->SetPose(se_pose);
+//     return;
+// }
 
 void Optimizer::MergeInertialBA(KeyFrame* pCurrKF, KeyFrame* pMergeKF, bool *pbStopFlag, Map *pMap, LoopClosing::KeyFrameAndPose &corrPoses)
 {
@@ -5586,10 +5618,10 @@ void Optimizer::OptimizeEssentialGraph4DoF(Map* pMap, KeyFrame* pLoopKF, KeyFram
 }
 
 Eigen::Matrix<float, 6, 6> Optimizer::estimate_covariance(g2o::VertexSE3Expmap* frm_vtx, 
-                                               vector<ORB_SLAM3::EdgeSE3ProjectXYZOnlyPose*>& vpEdgesMono,
-                                               vector<ORB_SLAM3::EdgeSE3ProjectXYZOnlyPoseToBody*>& vpEdgesMono_FHR,
-                                               vector<g2o::EdgeStereoSE3ProjectXYZOnlyPose*> vpEdgesStereo
-                                               ) {
+                                                          vector<ORB_SLAM3::EdgeSE3ProjectXYZOnlyPose*>& vpEdgesMono,
+                                                          vector<ORB_SLAM3::EdgeSE3ProjectXYZOnlyPoseToBody*>& vpEdgesMono_FHR,
+                                                          vector<g2o::EdgeStereoSE3ProjectXYZOnlyPose*> vpEdgesStereo
+                                                          ) {
     Eigen::Matrix<float, 6, 1> scale;
     scale << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
@@ -5690,17 +5722,54 @@ Eigen::Matrix<float, 6, 6> Optimizer::estimate_covariance(g2o::VertexSE3Expmap* 
                 frm_vtx->setEstimate(pose_cw);
 
                 size_t error_idx = 0;
-                // for (auto& pose_opt_edge_wrap : pose_opt_edge_wraps) {
-                //     if (pose_opt_edge_wrap.is_inlier()) {
-                //         auto edge = pose_opt_edge_wrap.edge_;
-                //         edge->computeError();
-                //         auto error_data = edge->errorData();
-                //         for (int edge_error_idx = 0; edge_error_idx < edge->dimension(); ++edge_error_idx) {
-                //             J(error_idx, dim) += 0.5 * error_data[edge_error_idx] / delta;
-                //             ++error_idx;
-                //         }
-                //     }
-                // }
+
+                for(size_t i=0, iend=vpEdgesMono.size(); i<iend; i++)
+                {
+                    ORB_SLAM3::EdgeSE3ProjectXYZOnlyPose* edge = vpEdgesMono[i];
+                    
+                    // if outlier - skip
+                    if(edge->level() == 1)
+                        continue;
+
+                    edge->computeError();
+                    auto edge_error_data = edge->errorData();
+                    for (int edge_error_idx = 0; edge_error_idx < edge->dimension(); ++edge_error_idx) {
+                        J(error_idx, dim) += 0.5 * edge_error_data[edge_error_idx] / delta;
+                        ++error_idx;
+                    }
+                }
+
+                for(size_t i=0, iend=vpEdgesMono_FHR.size(); i<iend; i++)
+                {
+                    ORB_SLAM3::EdgeSE3ProjectXYZOnlyPoseToBody* edge = vpEdgesMono_FHR[i];
+
+                    // if outlier - skip
+                    if(edge->level() == 1)
+                        continue;
+
+                    edge->computeError();
+                    auto edge_error_data = edge->errorData();
+                    for (int edge_error_idx = 0; edge_error_idx < edge->dimension(); ++edge_error_idx) {
+                        J(error_idx, dim) += 0.5 * edge_error_data[edge_error_idx] / delta;
+                        ++error_idx;
+                    }
+                }
+
+                for(size_t i=0, iend=vpEdgesStereo.size(); i<iend; i++)
+                {
+                    g2o::EdgeStereoSE3ProjectXYZOnlyPose* edge = vpEdgesStereo[i];
+
+                    // if outlier - skip
+                    if(edge->level() == 1)
+                        continue;
+
+                    edge->computeError();
+                    auto edge_error_data = edge->errorData();
+                    for (int edge_error_idx = 0; edge_error_idx < edge->dimension(); ++edge_error_idx) {
+                        J(error_idx, dim) += 0.5 * edge_error_data[edge_error_idx] / delta;
+                        ++error_idx;
+                    }
+                }
             }
         }
 

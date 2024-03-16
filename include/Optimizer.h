@@ -94,6 +94,9 @@ public:
     // Local BA in welding area when two maps are merged
     void static LocalBundleAdjustment(KeyFrame* pMainKF,vector<KeyFrame*> vpAdjustKF, vector<KeyFrame*> vpFixedKF, bool *pbStopFlag);
 
+    // For barometer aided systems
+    // void static optimize_EKF_with_barometer(Frame* pFrame, float barometer_cov);
+
     // Marginalize block element (start:end,start:end). Perform Schur complement.
     // Marginalized elements are filled with zeros.
     static Eigen::MatrixXd Marginalize(const Eigen::MatrixXd &H, const int &start, const int &end);

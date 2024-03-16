@@ -97,7 +97,7 @@ Viewer.save_debug_frames_path: /home/datasets/debug_images
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters
 #--------------------------------------------------------------------------------------------
-Viewer.imageViewScale: 1.4
+Viewer.imageViewScale: 2.0
 Viewer.KeyFrameSize: 0.1
 Viewer.KeyFrameLineWidth: 1.0
 Viewer.GraphLineWidth: 0.9

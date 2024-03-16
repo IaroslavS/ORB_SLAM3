@@ -387,7 +387,7 @@ Frame::Frame(const cv::Mat &imGray, const double& altitude, const double &timeSt
     :mpcpi(NULL),mpORBvocabulary(voc),mpORBextractorLeft(extractor),mpORBextractorRight(static_cast<ORBextractor*>(NULL)),
      mTimeStamp(timeStamp), mK(static_cast<Pinhole*>(pCamera)->toK()), mK_(static_cast<Pinhole*>(pCamera)->toK_()), mDistCoef(distCoef.clone()), mbf(bf), mThDepth(thDepth),
      mImuCalib(ImuCalib), mpImuPreintegrated(NULL),mpPrevFrame(pPrevF),mpImuPreintegratedFrame(NULL), mpReferenceKF(static_cast<KeyFrame*>(NULL)), mbIsSet(false), mbImuPreintegrated(false), mpCamera(pCamera),
-     mpCamera2(nullptr), mbHasPose(false), mbHasVelocity(false)
+     mpCamera2(nullptr), mbHasPose(false), mbHasVelocity(false), altitude_(altitude)
 {
     // Frame ID
     mnId=nNextId++;

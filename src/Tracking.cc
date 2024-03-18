@@ -2253,7 +2253,11 @@ void Tracking::Track()
 #ifdef REGISTER_TIMES
             std::chrono::steady_clock::time_point time_StartNewKF = std::chrono::steady_clock::now();
 #endif
-            bool bNeedKF = true;//NeedNewKeyFrame();
+            // wait for mapping module to be ready for acceptance for anothe keyframe
+            if ( mpLocalMapper->isStopped() || mpLocalMapper->stopRequested() || !(mpLocalMapper->AcceptKeyFrames()) ) {
+                usleep(10);
+            }
+            bool bNeedKF = NeedNewKeyFrame();
 
             // Check if we need to insert a new keyframe
             // if(bNeedKF && bOK)
@@ -2589,6 +2593,9 @@ void Tracking::CreateInitialMapMonocular()
     std::set<MapPoint*> sMPs;
     sMPs = pKFini->GetMapPoints();
 
+    std::cout << "altitude at init frame = " << pKFini->altitude_ << std::endl;
+    std::cout << "altitude at curr frame = " << pKFcur->altitude_ << std::endl;
+
     // Bundle Adjustment
     Verbose::PrintMess("New Map created with " + to_string(mpAtlas->MapPointsInMap()) + " points", Verbose::VERBOSITY_QUIET);
     Optimizer::GlobalBundleAdjustemnt(mpAtlas->GetCurrentMap(),20);
@@ -2614,6 +2621,23 @@ void Tracking::CreateInitialMapMonocular()
     // Scale initial baseline
     Sophus::SE3f Tc2w = pKFcur->GetPose();
     Tc2w.translation() *= invMedianDepth;
+
+    if (mSensor == System::MONOCULAR_BAROMETER || mSensor == System::IMU_MONOCULAR_BAROMETER) {
+        float error_altitude = std::abs(Tc2w.translation()(2) - (mCurrentFrame.altitude_ - pKFini->altitude_));
+        if ( (error_altitude > 0.1) || (Tc2w.translation()(2) < 0.01) ) {
+            std::cout << "Wrong initialization\n";
+            if (error_altitude > 0.1) {
+                std::cout << "error_altitude > 0.1\n";
+            }
+            if (Tc2w.translation()(2) < 0.01) {
+                std::cout << "Tc2w.translation()(2) < 0.01\n";
+            }
+            std::cout << "resetting..." << std::endl;
+            mpSystem->ResetActiveMap();
+            return;
+        }
+    }
+
     pKFcur->SetPose(Tc2w);
 
     // Scale points
@@ -2754,7 +2778,16 @@ bool Tracking::TrackReferenceKeyFrame()
     }
 
     mCurrentFrame.mvpMapPoints = vpMapPointMatches;
-    mCurrentFrame.SetPose(mLastFrame.GetPose());
+
+    // in case of barometric slam - set coarse prior state
+    if (mSensor == System::MONOCULAR_BAROMETER || mSensor == System::IMU_MONOCULAR_BAROMETER) {
+        Eigen::Matrix4f coarse_pose = mLastFrame.GetPose().matrix();
+        coarse_pose(2,3) = mCurrentFrame.altitude_ - altitude_at_init_frame_;
+        mCurrentFrame.SetPose(Sophus::SE3f(coarse_pose));
+    } 
+    else {
+        mCurrentFrame.SetPose(mLastFrame.GetPose());
+    }
 
     //mCurrentFrame.PrintPointDistribution();
 
@@ -2762,8 +2795,12 @@ bool Tracking::TrackReferenceKeyFrame()
     // cout << " TrackReferenceKeyFrame mLastFrame.mTcw:  " << mLastFrame.mTcw << endl;
     Optimizer::PoseOptimization(&mCurrentFrame);
 
-    if (mCurrentFrame.altitude_ != -1) {
-        optimize_EKF_with_barometer(&mCurrentFrame, 1.0, altitude_at_init_frame_);
+    if (mSensor == System::MONOCULAR_BAROMETER || mSensor == System::IMU_MONOCULAR_BAROMETER) {
+        // std::cout << "mCurrentFrame.altitude_ = " << mCurrentFrame.altitude_ << std::endl;
+        assert(mCurrentFrame.altitude_ != -1);
+        if (mCurrentFrame.altitude_ != -1) {
+            optimize_EKF_with_barometer(&mCurrentFrame, 1.0, altitude_at_init_frame_, &mLastFrame);
+        }
     }
 
     // Discard outliers
@@ -2800,34 +2837,38 @@ bool Tracking::TrackReferenceKeyFrame()
         return nmatchesMap>=10;
 }
 
-void Tracking::optimize_EKF_with_barometer(Frame* pFrame, const float& barometer_cov, const float& init_altitude)
+void Tracking::optimize_EKF_with_barometer(Frame* current_frame, const float& barometer_cov, const float& init_altitude, Frame* prev_frame)
 {
-    // input
-    //      frame      : Frame*
-    // output
-    //      pose       : Eigen::Matrix4d
-    //      covariance : Eigen::Matrix<float, 6,6>
 
-    Eigen::Matrix<float, 6,6> cov_result = Eigen::Matrix<float, 6,6>::Identity();
-    Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
+    Eigen::Matrix4f current_pose_cw = current_frame->GetPose().matrix();
+    std::cout << "pose after g2o:\n" << current_pose_cw << std::endl;
+    Eigen::Matrix4f prev_pose_cw = prev_frame->GetPose().matrix();
 
-    Eigen::Matrix4f prev_pose_cw = pFrame->GetPose().matrix();
-    Eigen::Matrix<float, 6,6> prev_cov = pFrame->covariance_;
-    std::cout << "prev_cov:\n" << prev_cov << std::endl;
-    float obs_altitude = static_cast<float>(pFrame->altitude_) - init_altitude;
+    float altitude_above_init_frame = static_cast<float>(current_frame->altitude_) - init_altitude;
+    std::cout << "altitude at init frame : " << init_altitude << std::endl;
+    std::cout << "current altitude : " << current_frame->altitude_ << std::endl;
 
-    Eigen::Matrix<float, 1,6> H; // jacobian of observation function
-    H << 0,0,1,0,0,0;
+    float relative_gain_along_z_wrt_altitude_ = altitude_above_init_frame / current_pose_cw(2,3);
+    std::cout << "relative_gain_along_z_wrt_altitude : " << relative_gain_along_z_wrt_altitude_ << std::endl;
+
+    Eigen::Matrix<float, 6,6> current_cov = current_frame->covariance_;
+    // std::cout << "current_cov from g2o:\n" << current_cov << std::endl;
+
+    // Eigen::Matrix<float, 1,6> H; // jacobian of observation function
+    // H << 0,0,1,0,0,0;
 
     // double S = H * prev_cov * H.transpose() + barometer_cov; // Innovation covariance matrix
-    double S = prev_cov(2,2)*1e9 + barometer_cov; // Innovation covariance matrix
-    float K = prev_cov(2,2)*1e9 / S;
+    // double S = current_cov(2,2)*relative_gain_along_z_wrt_altitude*relative_gain_along_z_wrt_altitude + barometer_cov; // Innovation covariance matrix
+    // float K = current_cov(2,2)*relative_gain_along_z_wrt_altitude*relative_gain_along_z_wrt_altitude / S;
+    double S = current_cov(2,2)*1e9 + barometer_cov; // Innovation covariance matrix
+    float K = current_cov(2,2)*1e9 / S;
     std::cout << "K: " << K << std::endl;
-    float predicted_state_z = prev_pose_cw(2,3) + K * (obs_altitude - prev_pose_cw(2,3));
+    float predicted_state_z = current_pose_cw(2,3) + K * (altitude_above_init_frame - current_pose_cw(2,3));
     std::cout << "predicted_state_z: " << predicted_state_z << std::endl;
-    prev_pose_cw(2,3) = predicted_state_z;
-    Sophus::SE3f se3_pose(prev_pose_cw);
-    pFrame->SetPose(se3_pose);
+    float correction_scale = predicted_state_z / current_pose_cw(2,3);
+    current_pose_cw(2,3) = predicted_state_z;
+    current_frame->SetPose(Sophus::SE3f(current_pose_cw));
+
     return;
 }
 
@@ -2920,11 +2961,16 @@ bool Tracking::TrackWithMotionModel()
     }
     else
     {
-        mCurrentFrame.SetPose(mVelocity * mLastFrame.GetPose());
+        // in case of barometric slam - set coarse prior state
+        if (mSensor == System::MONOCULAR_BAROMETER || mSensor == System::IMU_MONOCULAR_BAROMETER) {
+            Eigen::Matrix4f coarse_pose = mLastFrame.GetPose().matrix();
+            coarse_pose(2,3) = mCurrentFrame.altitude_ - altitude_at_init_frame_;
+            mCurrentFrame.SetPose(Sophus::SE3f(coarse_pose));
+        }
+        else {
+            mCurrentFrame.SetPose(mVelocity * mLastFrame.GetPose());
+        }  
     }
-
-
-
 
     fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
 
@@ -2965,6 +3011,14 @@ bool Tracking::TrackWithMotionModel()
 
     // Optimize frame pose with all matches
     Optimizer::PoseOptimization(&mCurrentFrame);
+
+    if (mSensor == System::MONOCULAR_BAROMETER || mSensor == System::IMU_MONOCULAR_BAROMETER) {
+        // std::cout << "mCurrentFrame.altitude_ = " << mCurrentFrame.altitude_ << std::endl;
+        assert(mCurrentFrame.altitude_ != -1);
+        if (mCurrentFrame.altitude_ != -1) {
+            optimize_EKF_with_barometer(&mCurrentFrame, 1.0, altitude_at_init_frame_, &mLastFrame);
+        }
+    }
 
     // Discard outliers
     int nmatchesMap = 0;
@@ -3135,7 +3189,7 @@ bool Tracking::NeedNewKeyFrame()
         return false;
 
     // If Local Mapping is freezed by a Loop Closure do not insert keyframes
-    if(mpLocalMapper->isStopped() || mpLocalMapper->stopRequested()) {
+    if (mpLocalMapper->isStopped() || mpLocalMapper->stopRequested()) {
         /*if(mSensor == System::MONOCULAR)
         {
             std::cout << "NeedNewKeyFrame: localmap stopped" << std::endl;
@@ -3242,7 +3296,14 @@ bool Tracking::NeedNewKeyFrame()
     else
         c4=false;
 
-    if(((c1a||c1b||c1c) && c2)||c3 ||c4)
+    bool c5 = false;
+    if ( mSensor==System::MONOCULAR_BAROMETER || mSensor == System::IMU_MONOCULAR_BAROMETER) {
+        if (relative_gain_along_z_wrt_altitude_ < 0.99 || relative_gain_along_z_wrt_altitude_ > 1.01) {
+            c5 = true;
+        }
+    }
+
+    if(((c1a||c1b||c1c) && c2)||c3 ||c4 || c5)
     {
         // If the mapping accepts keyframes, insert keyframe.
         // Otherwise send a signal to interrupt BA

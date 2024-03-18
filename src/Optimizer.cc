@@ -3944,37 +3944,6 @@ void Optimizer::LocalBundleAdjustment(KeyFrame* pMainKF,vector<KeyFrame*> vpAdju
     }
 }
 
-// void Optimizer::optimize_EKF_with_barometer(Frame* pFrame, float barometer_cov)
-// {
-//     // input
-//     //      frame      : Frame*
-//     // output
-//     //      pose       : Eigen::Matrix4d
-//     //      covariance : Eigen::Matrix<float, 6,6>
-
-//     Eigen::Matrix<float, 6,6> cov_result = Eigen::Matrix<float, 6,6>::Identity();
-//     Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
-
-//     Eigen::Matrix4f prev_pose_cw = pFrame->GetPose().matrix();
-//     std::cout << "prev_pose_cw:\n" << prev_pose_cw << std::endl;
-//     Eigen::Matrix<float, 6,6> prev_cov = pFrame->covariance_;
-//     float obs_altitude = static_cast<float>(pFrame->altitude_);
-
-//     Eigen::Matrix<float, 1,6> H; // jacobian of observation function
-//     H << 0,0,1,0,0,0;
-
-//     // double S = H * prev_cov * H.transpose() + barometer_cov; // Innovation covariance matrix
-//     double S = prev_cov(2,2)*1e9 + barometer_cov; // Innovation covariance matrix
-//     float K = prev_cov(2,2)*1e9 / S;
-//     std::cout << "K: " << K << std::endl;
-//     float predicted_state_z = prev_pose_cw(2,3) + K * (obs_altitude - prev_pose_cw(2,3));
-//     std::cout << "predicted_state_z: " << predicted_state_z << std::endl;
-//     prev_pose_cw(2,3) = predicted_state_z;
-//     Sophus::SE3f se3_pose(prev_pose_cw);
-//     pFrame->SetPose(se_pose);
-//     return;
-// }
-
 void Optimizer::MergeInertialBA(KeyFrame* pCurrKF, KeyFrame* pMergeKF, bool *pbStopFlag, Map *pMap, LoopClosing::KeyFrameAndPose &corrPoses)
 {
     const int Nd = 6;
@@ -5692,10 +5661,9 @@ Eigen::Matrix<float, 6, 6> Optimizer::estimate_covariance(g2o::VertexSE3Expmap* 
         double delta_yaw_pitch_roll = 0.001;
 
         // should augment pose of base in world
-        auto pose_0_cw = frm_vtx->estimate();
-        auto pose_0_wc = pose_0_cw.inverse();
-        auto translation_0 = pose_0_cw.translation().eval();
-        auto yaw_pitch_roll_0 = pose_0_cw.rotation().toRotationMatrix().eulerAngles(2, 1, 0);
+        auto pose_0 = frm_vtx->estimate();
+        auto translation_0 = pose_0.translation().eval();
+        auto yaw_pitch_roll_0 = pose_0.rotation().toRotationMatrix().eulerAngles(2, 1, 0);
 
         // compute second order approximation of jacobian J
         for (int delta_sign = -1; delta_sign <= 1; delta_sign += 2) {
@@ -5774,7 +5742,7 @@ Eigen::Matrix<float, 6, 6> Optimizer::estimate_covariance(g2o::VertexSE3Expmap* 
         }
 
         // restore estimate
-        frm_vtx->setEstimate(pose_0_cw);
+        frm_vtx->setEstimate(pose_0);
 
         // 1. Ganesh P. et al. Three Flavors of RGB-D Visual Odometry: Analysis of cost function compromises and covariance 
         //    estimation accuracy //2020 IEEE/ION Position, Location and Navigation Symposium (PLANS). – IEEE, 2020. – С. 1587-1595.

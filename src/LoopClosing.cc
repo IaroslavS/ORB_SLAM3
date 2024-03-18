@@ -302,7 +302,7 @@ void LoopClosing::Run()
             break;
         }
 
-        usleep(5000);
+        // usleep(5000);
     }
 
     SetFinish();

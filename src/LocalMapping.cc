@@ -80,6 +80,7 @@ void LocalMapping::Run()
             std::chrono::steady_clock::time_point time_StartProcessKF = std::chrono::steady_clock::now();
 #endif
             // BoW conversion and insertion in Map
+            // std::cout << "process keyframe" << std::endl;
             ProcessNewKeyFrame();
 #ifdef REGISTER_TIMES
             std::chrono::steady_clock::time_point time_EndProcessKF = std::chrono::steady_clock::now();
@@ -1162,6 +1163,7 @@ bool LocalMapping::isFinished()
 
 void LocalMapping::InitializeIMU(float priorG, float priorA, bool bFIBA)
 {
+    std::cout << "LocalMapping::InitializeIMU" << std::endl;
     if (mbResetRequested)
         return;
 
@@ -1179,8 +1181,11 @@ void LocalMapping::InitializeIMU(float priorG, float priorA, bool bFIBA)
     }
 
 
-    if(mpAtlas->KeyFramesInMap()<nMinKF)
+    if(mpAtlas->KeyFramesInMap()<nMinKF) {
+        std::cout << "mpAtlas->KeyFramesInMap()<nMinKF" << std::endl;
+        std::cout << "mpAtlas->KeyFramesInMap() : " << mpAtlas->KeyFramesInMap() << std::endl;
         return;
+    }
 
     // Retrieve all keyframe in temporal order
     list<KeyFrame*> lpKF;
@@ -1193,12 +1198,17 @@ void LocalMapping::InitializeIMU(float priorG, float priorA, bool bFIBA)
     lpKF.push_front(pKF);
     vector<KeyFrame*> vpKF(lpKF.begin(),lpKF.end());
 
-    if(vpKF.size()<nMinKF)
+    if(vpKF.size()<nMinKF) {
+        std::cout << "vpKF.size()<nMinKF" << std::endl;
         return;
+    }
 
     mFirstTs=vpKF.front()->mTimeStamp;
-    if(mpCurrentKeyFrame->mTimeStamp-mFirstTs<minTime)
+    if(mpCurrentKeyFrame->mTimeStamp-mFirstTs<minTime) {
+        std::cout << "mpCurrentKeyFrame->mTimeStamp-mFirstTs<minTime" << std::endl;
         return;
+    }
+        
 
     bInitializing = true;
 
@@ -1227,16 +1237,19 @@ void LocalMapping::InitializeIMU(float priorG, float priorA, bool bFIBA)
 
             dirG -= (*itKF)->mPrevKF->GetImuRotation() * (*itKF)->mpImuPreintegrated->GetUpdatedDeltaVelocity();
             Eigen::Vector3f _vel = ((*itKF)->GetImuPosition() - (*itKF)->mPrevKF->GetImuPosition())/(*itKF)->mpImuPreintegrated->dT;
+            std::cout << "_vel : \n" << _vel << std::endl;
             (*itKF)->SetVelocity(_vel);
             (*itKF)->mPrevKF->SetVelocity(_vel);
         }
 
         dirG = dirG/dirG.norm();
         Eigen::Vector3f gI(0.0f, 0.0f, -1.0f);
+        std::cout << "dirG : " << dirG << std::endl;
         Eigen::Vector3f v = gI.cross(dirG);
         const float nv = v.norm();
         const float cosg = gI.dot(dirG);
         const float ang = acos(cosg);
+        std::cout << "ang : " << ang << std::endl;
         Eigen::Vector3f vzg = v*ang/nv;
         Rwg = Sophus::SO3f::exp(vzg).matrix();
         mRwg = Rwg.cast<double>();
@@ -1257,6 +1270,12 @@ void LocalMapping::InitializeIMU(float priorG, float priorA, bool bFIBA)
     Optimizer::InertialOptimization(mpAtlas->GetCurrentMap(), mRwg, mScale, mbg, mba, mbMonocular, infoInertial, false, false, priorG, priorA);
 
     // std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+
+    std::cout << "estimated scale : " << mScale << std::endl;
+
+    std::cout << "mRwg : " << mRwg << std::endl;
+
+    std::cout << "mbg : " << mbg <<std::endl;
 
     if (mScale<1e-1)
     {
@@ -1412,6 +1431,8 @@ void LocalMapping::InitializeIMU(float priorG, float priorA, bool bFIBA)
     bInitializing = false;
 
     mpCurrentKeyFrame->GetMap()->IncreaseChangeIndex();
+
+    std::cout << "\033[1;33mIMU initialized !!!!!!!!\033[0m" << std::endl;
 
     return;
 }

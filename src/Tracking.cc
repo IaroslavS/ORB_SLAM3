@@ -2593,6 +2593,7 @@ void Tracking::CreateInitialMapMonocular()
     std::set<MapPoint*> sMPs;
     sMPs = pKFini->GetMapPoints();
 
+    std::cout << "altitude at ground = " << altitude_at_ground_ << std::endl;
     std::cout << "altitude at init frame = " << pKFini->altitude_ << std::endl;
     std::cout << "altitude at curr frame = " << pKFcur->altitude_ << std::endl;
 
@@ -2600,7 +2601,7 @@ void Tracking::CreateInitialMapMonocular()
     Verbose::PrintMess("New Map created with " + to_string(mpAtlas->MapPointsInMap()) + " points", Verbose::VERBOSITY_QUIET);
     Optimizer::GlobalBundleAdjustemnt(mpAtlas->GetCurrentMap(),20);
 
-    float medianDepth = pKFini->ComputeSceneMedianDepth(2);
+    float medianDepth = pKFcur->ComputeSceneMedianDepth(2);
     float invMedianDepth;
     if(mSensor == System::IMU_MONOCULAR)
         invMedianDepth = 4.0f/medianDepth; // 4.0f
@@ -2624,7 +2625,7 @@ void Tracking::CreateInitialMapMonocular()
 
     if (mSensor == System::MONOCULAR_BAROMETER || mSensor == System::IMU_MONOCULAR_BAROMETER) {
         float error_altitude = std::abs(Tc2w.translation()(2) - (mCurrentFrame.altitude_ - pKFini->altitude_));
-        if ( (error_altitude > 0.1) || (Tc2w.translation()(2) < 0.01) ) {
+        if ( (error_altitude > 0.1) || (Tc2w.translation()(2) < 0.005) ) {
             std::cout << "Wrong initialization\n";
             if (error_altitude > 0.1) {
                 std::cout << "error_altitude > 0.1\n";
@@ -2639,6 +2640,7 @@ void Tracking::CreateInitialMapMonocular()
     }
 
     pKFcur->SetPose(Tc2w);
+    std::cout << "second frame pose at initialization:\n" << Tc2w.matrix() << std::endl;
 
     // Scale points
     vector<MapPoint*> vpAllMapPoints = pKFini->GetMapPointMatches();
@@ -2651,6 +2653,20 @@ void Tracking::CreateInitialMapMonocular()
             pMP->UpdateNormalAndDepth();
         }
     }
+
+    medianDepth = pKFini->ComputeSceneMedianDepth(2);
+    float medianDepth2 = pKFcur->ComputeSceneMedianDepth(2);
+
+    // std::cout << "difference in median depth : " << medianDepth2 - medianDepth << std::endl;
+
+    if (mSensor == System::MONOCULAR_BAROMETER || mSensor == System::IMU_MONOCULAR_BAROMETER) {
+        if ( std::abs(std::abs(medianDepth2 - medianDepth) -  std::abs(Tc2w.translation()(2))) > 0.005 ) {
+            std::cout << "Wrong initialization: the UAV takes off not vertically" << std::endl;
+            mpSystem->ResetActiveMap();
+            return;
+        }
+    }
+    
 
     if (mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_MONOCULAR_BAROMETER)
     {
@@ -2841,7 +2857,7 @@ void Tracking::optimize_EKF_with_barometer(Frame* current_frame, const float& ba
 {
 
     Eigen::Matrix4f current_pose_cw = current_frame->GetPose().matrix();
-    std::cout << "pose after g2o:\n" << current_pose_cw << std::endl;
+    // std::cout << "pose after g2o:\n" << current_pose_cw << std::endl;
     Eigen::Matrix4f prev_pose_cw = prev_frame->GetPose().matrix();
 
     float altitude_above_init_frame = static_cast<float>(current_frame->altitude_) - init_altitude;
@@ -2849,7 +2865,7 @@ void Tracking::optimize_EKF_with_barometer(Frame* current_frame, const float& ba
     std::cout << "current altitude : " << current_frame->altitude_ << std::endl;
 
     float relative_gain_along_z_wrt_altitude_ = altitude_above_init_frame / current_pose_cw(2,3);
-    std::cout << "relative_gain_along_z_wrt_altitude : " << relative_gain_along_z_wrt_altitude_ << std::endl;
+    // std::cout << "relative_gain_along_z_wrt_altitude : " << relative_gain_along_z_wrt_altitude_ << std::endl;
 
     Eigen::Matrix<float, 6,6> current_cov = current_frame->covariance_;
     // std::cout << "current_cov from g2o:\n" << current_cov << std::endl;
@@ -2862,9 +2878,9 @@ void Tracking::optimize_EKF_with_barometer(Frame* current_frame, const float& ba
     // float K = current_cov(2,2)*relative_gain_along_z_wrt_altitude*relative_gain_along_z_wrt_altitude / S;
     double S = current_cov(2,2)*1e9 + barometer_cov; // Innovation covariance matrix
     float K = current_cov(2,2)*1e9 / S;
-    std::cout << "K: " << K << std::endl;
+    // std::cout << "K: " << K << std::endl;
     float predicted_state_z = current_pose_cw(2,3) + K * (altitude_above_init_frame - current_pose_cw(2,3));
-    std::cout << "predicted_state_z: " << predicted_state_z << std::endl;
+    std::cout << "predicted state z after EKF: " << predicted_state_z << std::endl;
     float correction_scale = predicted_state_z / current_pose_cw(2,3);
     current_pose_cw(2,3) = predicted_state_z;
     current_frame->SetPose(Sophus::SE3f(current_pose_cw));

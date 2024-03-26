@@ -3208,6 +3208,7 @@ void Optimizer::InertialOptimization(Map *pMap, Eigen::Matrix3d &Rwg, double &sc
 
         VertexVelocity* VV = static_cast<VertexVelocity*>(optimizer.vertex(maxKFid+(pKFi->mnId)+1));
         Eigen::Vector3d Vw = VV->estimate(); // Velocity is scaled after
+        std::cout << "Vw.cast<float>() :\n" << Vw.cast<float>() << std::endl;
         pKFi->SetVelocity(Vw.cast<float>());
 
         if ((pKFi->GetGyroBias() - bg.cast<float>()).norm() > 0.01)

@@ -27,6 +27,23 @@ Camera.fps: 16
 # Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
 Camera.RGB: 1
 
+# Transformation from body-frame (imu) to camera
+IMU.T_b_c1: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: f
+   data: [0.00555786,  0.99997899, -0.00333593,  0.00073847,
+         0.99994638, -0.00552847,  0.00875655,  0.00003206,
+         0.00873793, -0.00338442, -0.9999561,   0.0001082, 
+         0.,          0.,          0.,          1.        ]
+
+# IMU noise
+IMU.NoiseGyro: 1.9425812268625707e-03 
+IMU.NoiseAcc: 9.1250479353131696e-03
+IMU.GyroWalk: 3.9570963198826466e-05
+IMU.AccWalk: 1.3059510861758910e-04
+IMU.Frequency: 100.0
+
 # Camera resolution
 Camera.width: 612
 Camera.height: 512
@@ -97,7 +114,7 @@ Viewer.save_debug_frames_path: /home/datasets/debug_images
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters
 #--------------------------------------------------------------------------------------------
-Viewer.imageViewScale: 1.0
+Viewer.imageViewScale: 2.0
 Viewer.KeyFrameSize: 0.1
 Viewer.KeyFrameLineWidth: 1.0
 Viewer.GraphLineWidth: 0.9

@@ -102,6 +102,8 @@ int main(int argc, char **argv)
         tot_images += nImages[seq];
         nImu[seq] = vTimestampsImu[seq].size();
 
+        std::cout << "1" << std::endl;
+
         if((nImages[seq]<=0)||(nImu[seq]<=0))
         {
             cerr << "ERROR: Failed to load images or IMU for sequence" << seq << endl;
@@ -109,9 +111,14 @@ int main(int argc, char **argv)
         }
 
         // Find first imu to be considered, supposing imu measurements start first
+        std::cout << "vTimestampsCam[seq][0]: " << vTimestampsCam[seq][0] << std::endl;
+        std::cout << "first_imu[seq]: " << first_imu[seq] << std::endl;
+        std::cout << "vTimestampsImu[seq][first_imu[seq]]: " << vTimestampsImu[seq][first_imu[seq]] << std::endl;
         while(vTimestampsImu[seq][first_imu[seq]]<=vTimestampsCam[seq][0])
             first_imu[seq]++;
+        std::cout << "first_imu[seq] : " << first_imu[seq] << std::endl; 
         first_imu[seq]--; // first imu measurement to be considered
+        std::cout << "2" << std::endl;
         
     }
 
@@ -146,7 +153,6 @@ int main(int argc, char **argv)
         cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(3.0, cv::Size(8, 8));
         for(int ni=0; ni<nImages[seq]; ni++, proccIm++)
         {
-            std::cout << "number of image = " << ni << std::endl;
             // Read image from file
             // im = cv::imread(vstrImageFilenames[seq][ni],cv::IMREAD_GRAYSCALE); //,cv::IMREAD_GRAYSCALE);
             im = cv::imread(vstrImageFilenames[seq][ni], 128);
@@ -156,8 +162,6 @@ int main(int argc, char **argv)
 
             // cout << "mat type: " << im.type() << endl;
             double tframe = vTimestampsCam[seq][ni];
-
-            std::cout << "timestamp : " << vTimestampsCam[seq][ni] << std::endl;
 
             if(im.empty())
             {
@@ -350,14 +354,13 @@ void LoadIMU(const string &strImuPath, vector<double> &vTimeStamps, vector<cv::P
         getline(fImu,s);
         if (s[0] == '#')
             continue;
-
         if(!s.empty())
         {
             string item;
             size_t pos = 0;
             double data[7];
             int count = 0;
-            while ((pos = s.find(',')) != string::npos) {
+            while ((pos = s.find(' ')) != string::npos) {
                 item = s.substr(0, pos);
                 data[count++] = stod(item);
                 s.erase(0, pos + 1);
